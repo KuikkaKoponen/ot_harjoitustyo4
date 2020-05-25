@@ -80,7 +80,6 @@ const App = () => {
     }
   }
 
-
   const loginForm = () => (
     <form onSubmit={handleLogin}>
       <div>
@@ -89,7 +88,7 @@ const App = () => {
           type="text"
           value={username}
           name="Username"
-          onChange={({ target }) => setUsername(target.value)}
+          onChange={({ target }) => setUsername(target.value)} // targetin rooli?
         />
       </div>
       <div>
@@ -98,7 +97,7 @@ const App = () => {
           type="password"
           value={password}
           name="Password"
-          onChange={({ target }) => setPassword(target.value)}
+          onChange={({ target }) => setPassword(target.value)} // targetin rooli?
         />
       </div>
       <button type="submit">login</button>
@@ -125,7 +124,7 @@ const App = () => {
         value={newBlogUrl}
         onChange={handleBlogUrlChange}
       /> <br></br>
-      Likes 
+      Likes
       <input
         value={newBlogLikes}
         onChange={handleBlogLikesChange}
@@ -152,6 +151,21 @@ const App = () => {
         setNewBlogAuthor('')
         setNewBlogUrl('')
         setNewBlogLikes('')
+        setErrorMessage(
+          `New blog added`
+        )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
+
+      }).catch(error => {
+        console.log(error.message)
+        setErrorMessage(
+          `Error when  adding new blog`
+        )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
       })
   }
 
@@ -171,24 +185,34 @@ const App = () => {
     setNewBlogLikes(event.target.value)
   }
 
+  const showBlogs = () => (
+    <div>
+      <h2>blogs</h2>
+      {blogs.map(blog =>
+        <Blog key={blog.id} blog={blog} />
+      )}
+    </div>
+  )
+
 
   return (
     <div>
+      <h2>Blog site</h2>
       <Notification message={errorMessage} />
-      <h2>Login</h2>
       {user === null ?
       loginForm() :
       <div>
         <p>{user.name} logged in</p>
         {blogForm()}
       </div>
-    }
-  
-      <h2>blogs</h2>
-      {blogs.map(blog =>
-        <Blog key={blog.id} blog={blog} />
-      )}
+      }
+      
+      {user === null ?
+       <div></div> :
+      showBlogs()
+      } 
     </div>
+    
   )
 }
 
