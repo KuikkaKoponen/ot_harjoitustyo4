@@ -1,27 +1,24 @@
-/// MUOKKAA siten että blogit näkyvät vain kirjautuneille ja vain omat näkyvät jne.
-
 import React, { useState, useEffect } from 'react'
 import Blog from './components/Blog'
+import LoginForm from './components/LoginForm'
+import BlogForm from './components/BlogForm'
+import Togglable from './components/Togglable'
 import blogService from './services/blogs'
 import loginService from './services/login' 
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
-  const [newBlogTitle, setNewBlogTitle] = useState('')
-  const [newBlogAuthor, setNewBlogAuthor] = useState('')
-  const [newBlogUrl, setNewBlogUrl] = useState('')
-  const [newBlogLikes, setNewBlogLikes] = useState('')
   const [username, setUsername] = useState('') 
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState(null) 
   const [user, setUser] = useState(null)
+  const [loginVisible, setLoginVisible] = useState(false)
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
-      setBlogs( blogs )
-    )  
+      setBlogs( blogs.sort(compareLikes) )
+    )
   }, [])
-
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
@@ -35,10 +32,34 @@ const App = () => {
   const Notification = ({ message }) => {
     if (message === null) {
       return null
-    } 
+    }
     return (
       <div className="error">
         {message}
+      </div>
+    )
+  }
+
+  const loginForm = () => {
+    // loginform tehty ilman ToggleLogin avustusta, voitasiin ihan hyvin heittää LoginForm sen sisään, sama lopputulos
+    const hideWhenVisible = { display: loginVisible ? 'none' : '' }
+    const showWhenVisible = { display: loginVisible ? '' : 'none' }
+
+    return (
+      <div>
+        <div style={hideWhenVisible}>
+          <button onClick={() => setLoginVisible(true)}>log in</button>
+        </div>
+        <div style={showWhenVisible}>
+          <LoginForm
+            username={username}
+            password={password}
+            handleUsernameChange={({ target }) => setUsername(target.value)}
+            handlePasswordChange={({ target }) => setPassword(target.value)}
+            handleSubmit={handleLogin}
+          />
+          <button onClick={() => setLoginVisible(false)}>hide login</button>
+        </div>
       </div>
     )
   }
@@ -53,7 +74,7 @@ const App = () => {
       window.localStorage.setItem(
         'loggedBlogappUser', JSON.stringify(user)
       )
-      
+
       blogService.setToken(user.token)
       setUser(user)
       setUsername('')
@@ -80,79 +101,15 @@ const App = () => {
     }
   }
 
-  const loginForm = () => (
-    <form onSubmit={handleLogin}>
-      <div>
-        username
-          <input
-          type="text"
-          value={username}
-          name="Username"
-          onChange={({ target }) => setUsername(target.value)} // targetin rooli?
-        />
-      </div>
-      <div>
-        password
-          <input
-          type="password"
-          value={password}
-          name="Password"
-          onChange={({ target }) => setPassword(target.value)} // targetin rooli?
-        />
-      </div>
-      <button type="submit">login</button>
-    </form>      
-  )
-
-  const blogForm = () => (
-    <div>
-    <button onClick={handleLogOut}>Log out</button>
-    <h2>Add blog</h2>
-    <form onSubmit={addBlog}>
-     Author
-      <input
-        value={newBlogTitle}
-        onChange={handleBlogTitleChange}
-      /> <br></br>
-      Title
-      <input
-        value={newBlogAuthor}
-        onChange={handleBlogAuthorChange}
-      /> <br></br>
-      Url
-      <input
-        value={newBlogUrl}
-        onChange={handleBlogUrlChange}
-      /> <br></br>
-      Likes
-      <input
-        value={newBlogLikes}
-        onChange={handleBlogLikesChange}
-      /> <br></br>
-      <button type="submit">save</button>
-    </form>
-    </div>  
-  )
-
-  const addBlog = (event) => {
-    event.preventDefault()
-    const noteObject = {
-      title: newBlogTitle,
-      author: newBlogAuthor,
-      url: newBlogUrl,
-      likes: newBlogLikes,
-    }
-  
+  // addBlog funktio heitetään BlogFormille 
+  const addBlog = (blogObject) => {
+    noteFormRef.current.toggleVisibility() // kutsutaan reffin toggleVisibilitiä. Piilotetaan addblog form
     blogService
-      .create(noteObject)
+      .create(blogObject)
       .then(returnedBlog => {
-        setBlogs(blogs.concat(returnedBlog))
-        setNewBlogTitle('')
-        setNewBlogAuthor('')
-        setNewBlogUrl('')
-        setNewBlogLikes('')
+        setBlogs(blogs.concat(returnedBlog).sort(compareLikes))
         setErrorMessage(
-          `New blog added`
+          'New blog added'
         )
         setTimeout(() => {
           setErrorMessage(null)
@@ -161,7 +118,7 @@ const App = () => {
       }).catch(error => {
         console.log(error.message)
         setErrorMessage(
-          `Error when  adding new blog`
+          'Error when  adding new blog'
         )
         setTimeout(() => {
           setErrorMessage(null)
@@ -169,50 +126,100 @@ const App = () => {
       })
   }
 
-  const handleBlogTitleChange = (event) => {
-    setNewBlogTitle(event.target.value)
+  /// toimii
+  const addLike = (blogObject) => {
+    const update = {
+      user: blogObject.user._id,
+      likes: blogObject.likes + 1,
+      author: blogObject.author,
+      title: blogObject.title,
+      url: blogObject.url
+    }
+    blogService
+      .update(blogObject.id, update)
+      .then(returnedBlog => {
+        setBlogs(blogs.map(blog => blog.id !== returnedBlog.id ? blog : returnedBlog).sort(compareLikes))
+        setErrorMessage(`You have liked ${returnedBlog.title}`)
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
+
+      }).catch(error => {
+        console.log(error.message)
+        setErrorMessage(
+          'Error when updating blog'
+        )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
+      })
   }
 
-  const handleBlogAuthorChange = (event) => {
-    setNewBlogAuthor(event.target.value)
+  /// toimii
+  const deleteBlog = (blogObject) => {
+    if (window.confirm(`Do you really want delete ${blogObject.title}?`)) {
+      blogService
+        .remove(blogObject.id)
+        .then(returnedBlog => {
+          setBlogs(blogs.filter(blog => blog.id !== blogObject.id).sort(compareLikes))
+          setErrorMessage(`You have deleted ${blogObject.title}`)
+          setTimeout(() => {
+            setErrorMessage(null)
+          }, 5000)
+
+        }).catch(error => {
+          console.log(error.message)
+          setErrorMessage(
+            'Only own blog can be deleted'
+          )
+          setTimeout(() => {
+            setErrorMessage(null)
+          }, 5000)
+        })
+    }
   }
 
-  const handleBlogUrlChange = (event) => {
-    setNewBlogUrl(event.target.value)
-  }
+  const noteFormRef = React.createRef()  // luodaan reffi. Se välitetään Togglablen useImperativeHandlelle, jota sitten kutsutaan
 
-  const handleBlogLikesChange = (event) => {
-    setNewBlogLikes(event.target.value)
-  }
-
-  const showBlogs = () => (
+  const blogForm = () => (
     <div>
-      <h2>blogs</h2>
-      {blogs.map(blog =>
-        <Blog key={blog.id} blog={blog} />
-      )}
+      <button onClick={handleLogOut}>Log out</button>
+      <Togglable buttonLabel="Add new blog" ref={noteFormRef}> 
+        <BlogForm createBlog={addBlog}/>
+      </Togglable>
     </div>
   )
 
+  const compareLikes = (a, b) => {
+    return a.likes - b.likes
+  }
+
+  const showBlogs = () => (
+    <div className='blogs'>
+      <h2>blogs</h2>
+      {blogs.map(blog =>
+        <Blog key={blog.id} blog={blog} addLike={addLike} deleteBlog={deleteBlog} />
+      )}
+    </div>
+  )
 
   return (
     <div>
       <h2>Blog site</h2>
       <Notification message={errorMessage} />
       {user === null ?
-      loginForm() :
-      <div>
-        <p>{user.name} logged in</p>
-        {blogForm()}
-      </div>
+        loginForm() :
+        <div>
+          <p>{user.name} logged in</p>
+          {blogForm()}
+        </div>
       }
-      
+
       {user === null ?
-       <div></div> :
-      showBlogs()
-      } 
+        <div></div> :
+        showBlogs()
+      }
     </div>
-    
   )
 }
 
