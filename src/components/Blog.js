@@ -13,8 +13,8 @@ const Blog = ({ blog, addLike, deleteBlog }) => {
   return (
     <div style={blogStyle} className='blog'>
       {blog.title} <br></br>
-      <Togglable buttonLabel="Show more details"> 
-        {blog.author} <br></br>
+      {blog.author} <br></br>
+      <Togglable buttonLabel="Show more details">
         {blog.url} <br></br>
         {blog.likes}
         <button onClick={() => addLike(blog)} >like</button> <br></br>

@@ -35,30 +35,30 @@ const BlogForm = ({ createBlog }) => {
     setNewBlogAuthor('')
     setNewBlogUrl('')
     setNewBlogLikes('')
-
   }
 
   return (
-    <div>
+    <div className="formDiv">
       <h2>Add blog</h2>
+
       <form onSubmit={addBlog}>
-    Author
+         Author
         <input className="author"
           value={newBlogTitle}
           onChange={handleBlogTitleChange}
         /> <br></br>
-    Title
-        <input
+        Title
+        <input className="title"
           value={newBlogAuthor}
           onChange={handleBlogAuthorChange}
         /> <br></br>
-    Url
-        <input
+        Url
+        <input className="url"
           value={newBlogUrl}
           onChange={handleBlogUrlChange}
         /> <br></br>
-    Likes
-        <input
+        Likes
+        <input className="likes"
           value={newBlogLikes}
           onChange={handleBlogLikesChange}/> <br></br>
         <button type="submit">save</button>
