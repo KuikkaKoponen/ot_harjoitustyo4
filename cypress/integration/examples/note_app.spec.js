@@ -16,7 +16,7 @@ describe('Blog ', function() {  // funktio voitaisiin korvata nuolifunktiolla mu
     cy.contains('log in')
   })
 
-  it('login form can be opened', function() {
+  it('login form can be opened and login succeeds with correct credentials', function() {
     cy.contains('log in').click()
     cy.get('#username').type('pekkala')
     cy.get('#password').type('pekkala')
@@ -36,6 +36,7 @@ describe('Blog ', function() {  // funktio voitaisiin korvata nuolifunktiolla mu
     */
 
     beforeEach(function() {
+      // alla hieno tapa miten hoitaa kirjautuminen. Funktiot löytyy commands luokasta
       cy.login({ username: 'pekkala', password: 'pekkala' })
       cy.createBlog({
         author: 'another note cypress',
@@ -45,7 +46,7 @@ describe('Blog ', function() {  // funktio voitaisiin korvata nuolifunktiolla mu
       })
     })
 
-    it('a new note can be created', function() {
+    it('a new blog can be created', function() {
       cy.contains('Add new blog').click()
       cy.get('.author').type('author created by cypress pekkala')
       cy.get('.title').type('title created by cypress')
@@ -55,24 +56,58 @@ describe('Blog ', function() {  // funktio voitaisiin korvata nuolifunktiolla mu
       cy.contains('New blog added')
     })
 
+    it('a blog can be deleted', function() {
+      cy.contains('another note cypress').contains('Show more details').click()
+      cy.contains('another note cypress').contains('delete').click()
+      cy.contains('You have deleted title')
+    })
+
     it('more details can be shown and likes work', function() {
-      /* vanha tapa
+      cy.contains('Show more details').click()
+      cy.contains('title')
+      cy.contains('100')
+      cy.contains('like').click()
+      cy.contains('101')
+    })
+
+    it('Ketjutus onnistuu', function() {
       cy.contains('Add new blog').click()
+      // huom. Komento cy.get etsii elementtejä aina koko sivulta
       cy.get('.author').type('author created by cypress pekkala')
       cy.get('.title').type('title created by cypress')
       cy.get('.url').type('url created by cypress')
       cy.get('.likes').type('123')
       cy.contains('save').click()
-      */
 
-      cy.contains('Show more details').click()
-      cy.contains('url created by cypress')
-      cy.contains('123')
-      cy.contains('like').click()
-      cy.contains('124')
+      // Ketjutus.Peräkkäin ketjutettuna toisena oleva contains-komento siis jatkaa hakua ensimmäisen komennon löytämän komponentin sisältä
+      cy.contains('author created by cypress pekkala').contains('Show more details').click()
+      cy.contains('author created by cypress pekkala').contains('like').click()
+      cy.contains('author created by cypress pekkala').contains('124')
+
     })
+
+    // oikean napin löytämiseksi myös 'parent' ja 'as' (toistoa vähemmän) ovat hyödyllisiä
+    // ei toimi oikein sovi tähän testiin mutta alla esimerkki
+    /* 
+    it.only('other of those can be made important', function () {
+      cy.contains('second note').parent().find('button').as('theButton')
+      cy.get('@theButton').click()
+      cy.get('@theButton').should('contain', 'make not important')
+    })
+    */
+    
+    // Myös then komennolla saattaa olla käyttöä
+    /*
+   it('then example', function() {
+    cy.get('button').then( buttons => {
+      console.log('number of buttons', buttons.length)
+      cy.wrap(buttons[0]).click()
+    })
+    */
   })
-  it.only('login fails with wrong password', function() {
+
+  })
+  it('login fails with wrong password', function() {
     cy.contains('log in').click()
     cy.get('#username').type('pekkala')
     cy.get('#password').type('wrong')
